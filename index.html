@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sólidos de Revolución — Discos y Arandelas</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f4f3ee;
+    --color-text-primary: #1a1a18;
+    --color-text-secondary: #5f5e5a;
+    --color-border-tertiary: rgba(0,0,0,0.12);
+    --color-border-secondary: rgba(0,0,0,0.22);
+    --color-border-primary: rgba(0,0,0,0.35);
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-sans: system-ui, -apple-system, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #1a1a18;
+      --color-background-secondary: #242420;
+      --color-text-primary: #e8e6dc;
+      --color-text-secondary: #9c9a92;
+      --color-border-tertiary: rgba(255,255,255,0.1);
+      --color-border-secondary: rgba(255,255,255,0.2);
+      --color-border-primary: rgba(255,255,255,0.35);
+    }
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  .wrapper {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: .25rem;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin-bottom: 1.5rem;
+  }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .tab {
+    padding: 6px 16px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-secondary);
+    background: transparent;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all .15s;
+    font-family: var(--font-sans);
+  }
+  .tab.active {
+    background: var(--color-background-secondary);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-primary);
+    font-weight: 500;
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .formula-box {
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-lg);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 0.5px solid var(--color-border-tertiary);
+  }
+  .formula { font-size: 17px; font-weight: 500; margin-bottom: 4px; }
+  .formula-sub { font-size: 12px; color: var(--color-text-secondary); }
+
+  canvas {
+    display: block;
+    width: 100%;
+    border-radius: var(--border-radius-lg);
+    border: 0.5px solid var(--color-border-tertiary);
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 1rem 0;
+    align-items: center;
+  }
+  .ctrl-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+  }
+  .ctrl-group input[type=range] { width: 90px; accent-color: #1D9E75; }
+  .ctrl-group span {
+    min-width: 28px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+  .ctrl-group select {
+    padding: 4px 8px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-secondary);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    font-size: 13px;
+    font-family: var(--font-sans);
+  }
+
+  .result-card {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-md);
+    padding: .75rem 1rem;
+    margin-top: .75rem;
+  }
+  .result-label { font-size: 12px; color: var(--color-text-secondary); }
+  .result-value { font-size: 22px; font-weight: 500; }
+
+  .quiz-q { font-size: 14px; font-weight: 500; margin-bottom: .75rem; }
+  .quiz-opts { display: flex; flex-direction: column; gap: 6px; }
+  .quiz-opt {
+    padding: 8px 12px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--color-text-primary);
+    text-align: left;
+    transition: all .15s;
+    font-family: var(--font-sans);
+  }
+  .quiz-opt:hover { background: var(--color-background-secondary); }
+  .quiz-opt.correct { background: #E1F5EE; border-color: #1D9E75; color: #085041; }
+  .quiz-opt.wrong   { background: #FCEBEB; border-color: #A32D2D; color: #501313; }
+  .quiz-feedback {
+    margin-top: .75rem;
+    font-size: 13px;
+    padding: .5rem .75rem;
+    border-radius: var(--border-radius-md);
+    line-height: 1.5;
+  }
+  .quiz-feedback.ok  { background: #E1F5EE; color: #085041; }
+  .quiz-feedback.err { background: #FCEBEB; color: #501313; }
+  .next-btn {
+    margin-top: .75rem;
+    padding: 6px 16px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-secondary);
+    background: transparent;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+  }
+  .next-btn:hover { background: var(--color-background-secondary); }
+
+  .desc {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+  .note {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-top: .75rem;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <h1>Sólidos de Revolución</h1>
+  <p class="subtitle">Método de discos y arandelas — introducción interactiva</p>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('intuicion')">Intuición</button>
+    <button class="tab" onclick="showTab('disco')">Método disco</button>
+    <button class="tab" onclick="showTab('arandela')">Método arandela</button>
+    <button class="tab" onclick="showTab('quiz')">Practica</button>
+  </div>
+
+  <!-- TAB 1 -->
+  <div class="panel active" id="tab-intuicion">
+    <p class="desc">Toma una función f(x) y gírala alrededor del eje x. El sólido que se forma se llama <strong>sólido de revolución</strong>. Arrastra el slider para ver cuántos discos lo forman.</p>
+    <canvas id="cvIntuicion" height="220"></canvas>
+    <div class="controls">
+      <div class="ctrl-group">
+        <label>Función</label>
+        <select id="fnSel" onchange="drawAll()">
+          <option value="sqrt">y = √x</option>
+          <option value="linear">y = x</option>
+          <option value="sq">y = x²</option>
+          <option value="sin">y = 1+0.5sin(x)</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>Discos</label>
+        <input type="range" min="3" max="30" value="10" id="slDiscos" oninput="drawAll()">
+        <span id="lblDiscos">10</span>
+      </div>
+    </div>
+    <p class="desc" style="margin-top:.5rem">Cada disco es un cilindro delgado. Su radio es <strong>f(x)</strong> y su grosor es <strong>Δx</strong>. Mientras más discos, más exacto el volumen.</p>
+  </div>
+
+  <!-- TAB 2 -->
+  <div class="panel" id="tab-disco">
+    <div class="formula-box">
+      <div class="formula">V = π ∫ₐᵇ [f(x)]² dx</div>
+      <div class="formula-sub">Integra π por el cuadrado de la función</div>
+    </div>
+    <p class="desc">Elige una función y ajusta los límites. Ve cómo cambia el volumen del sólido.</p>
+    <canvas id="cvDisco" height="200"></canvas>
+    <div class="controls">
+      <div class="ctrl-group">
+        <label>f(x)</label>
+        <select id="fnDiscoSel" onchange="drawDisco()">
+          <option value="linear">y = x  → Cono</option>
+          <option value="sqrt">y = √x  → Paraboloide</option>
+          <option value="sq">y = x²</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>a</label>
+        <input type="range" min="0" max="1.5" step="0.1" value="0" id="slA" oninput="drawDisco()">
+        <span id="lblA">0</span>
+      </div>
+      <div class="ctrl-group">
+        <label>b</label>
+        <input type="range" min="0.5" max="3" step="0.1" value="2" id="slB" oninput="drawDisco()">
+        <span id="lblB">2</span>
+      </div>
+    </div>
+    <div class="result-card">
+      <span class="result-label">Volumen ≈</span>
+      <span class="result-value" id="volDisco">—</span>
+      <span class="result-label">unidades³</span>
+    </div>
+  </div>
+
+  <!-- TAB 3 -->
+  <div class="panel" id="tab-arandela">
+    <div class="formula-box">
+      <div class="formula">V = π ∫ₐᵇ ([R(x)]² − [r(x)]²) dx</div>
+      <div class="formula-sub">Radio exterior R(x) menos radio interior r(x)</div>
+    </div>
+    <p class="desc">Cuando hay dos funciones, cada "disco" tiene un hueco. Se convierte en arandela.</p>
+    <canvas id="cvArandela" height="200"></canvas>
+    <div class="controls">
+      <div class="ctrl-group">
+        <label>R(x)</label>
+        <select id="fnR" onchange="drawArandela()">
+          <option value="linear">y = x</option>
+          <option value="sqrt">y = √x</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>r(x)</label>
+        <select id="fnr" onchange="drawArandela()">
+          <option value="sq">y = x²</option>
+          <option value="half">y = x/2</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>b</label>
+        <input type="range" min="0.5" max="1.5" step="0.05" value="1" id="slArandB" oninput="drawArandela()">
+        <span id="lblArandB">1</span>
+      </div>
+    </div>
+    <div class="result-card">
+      <span class="result-label">Volumen ≈</span>
+      <span class="result-value" id="volArand">—</span>
+      <span class="result-label">unidades³</span>
+    </div>
+    <p class="note">Azul = región entre las dos curvas. Gris = "hueco" que se resta.</p>
+  </div>
+
+  <!-- TAB 4 -->
+  <div class="panel" id="tab-quiz">
+    <div id="quiz-container"></div>
+  </div>
+</div>
+
+<script>
+const fns = {
+  sqrt:   x => Math.sqrt(Math.max(0,x)),
+  linear: x => x,
+  sq:     x => x*x,
+  sin:    x => 1 + 0.5*Math.sin(x*2),
+  half:   x => x/2,
+};
+
+function isDark() { return matchMedia('(prefers-color-scheme: dark)').matches; }
+
+function getColors() {
+  const dark = isDark();
+  return {
+    axis:   dark ? '#4a4a45' : '#c0bfb8',
+    curve:  dark ? '#5DCAA5' : '#1D9E75',
+    disk:   dark ? 'rgba(93,202,165,0.25)' : 'rgba(29,158,117,0.18)',
+    diskBd: dark ? '#5DCAA5' : '#1D9E75',
+    outer:  dark ? 'rgba(93,202,165,0.22)' : 'rgba(29,158,117,0.15)',
+    inner:  dark ? 'rgba(100,100,95,0.35)' : 'rgba(180,180,170,0.4)',
+    innerBd:dark ? '#888780' : '#888780',
+    text:   dark ? '#c2c0b6' : '#3d3d3a',
+    grid:   dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+  };
+}
+
+function setupCanvas(cv, h) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.parentElement.clientWidth - 2;
+  cv.width  = w * dpr;
+  cv.height = h * dpr;
+  cv.style.width  = w + 'px';
+  cv.style.height = h + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, w, h };
+}
+
+function drawIntuicion() {
+  const cv = document.getElementById('cvIntuicion');
+  const { ctx, w, h } = setupCanvas(cv, 220);
+  const C = getColors();
+  const n = +document.getElementById('slDiscos').value;
+  document.getElementById('lblDiscos').textContent = n;
+  const f = fns[document.getElementById('fnSel').value];
+
+  const pad = {l:40,r:20,t:20,b:30};
+  const xRange=[0,3], yMax=2.2;
+  const toX = v => pad.l + (v-xRange[0])/(xRange[1]-xRange[0])*(w-pad.l-pad.r);
+  const toY = v => h - pad.b - v/yMax*(h-pad.t-pad.b);
+  const midY = toY(0);
+
+  ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle=C.grid; ctx.lineWidth=1;
+  for(let v=0.5;v<3;v+=0.5){ctx.beginPath();ctx.moveTo(toX(v),pad.t);ctx.lineTo(toX(v),h-pad.b);ctx.stroke();}
+
+  ctx.strokeStyle=C.axis; ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(pad.l,pad.t);ctx.lineTo(pad.l,h-pad.b);ctx.lineTo(w-pad.r,h-pad.b);ctx.stroke();
+
+  const dx=(xRange[1]-xRange[0])/n;
+  ctx.lineWidth=0.8;
+  for(let i=0;i<n;i++){
+    const xi=xRange[0]+(i+0.5)*dx;
+    const r=Math.abs(toY(f(xi))-midY);
+    const left=toX(xRange[0]+i*dx), right=toX(xRange[0]+(i+1)*dx);
+    ctx.fillStyle=C.disk; ctx.strokeStyle=C.diskBd;
+    ctx.beginPath(); ctx.ellipse(left,midY,6,r,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=C.disk;
+    ctx.fillRect(left,midY-r,right-left,r);
+    ctx.fillRect(left,midY,right-left,r);
+    ctx.strokeStyle=C.diskBd; ctx.strokeRect(left,midY-r,right-left,r*2);
+    ctx.beginPath(); ctx.ellipse(right,midY,6,r,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  }
+
+  ctx.strokeStyle=C.curve; ctx.lineWidth=2.5;
+  ctx.beginPath();
+  for(let i=0;i<=200;i++){const x=xRange[0]+i/200*(xRange[1]-xRange[0]);i===0?ctx.moveTo(toX(x),toY(f(x))):ctx.lineTo(toX(x),toY(f(x)));}
+  ctx.stroke();
+  ctx.lineWidth=1.2; ctx.setLineDash([4,4]);
+  ctx.beginPath();
+  for(let i=0;i<=200;i++){const x=xRange[0]+i/200*(xRange[1]-xRange[0]);i===0?ctx.moveTo(toX(x),toY(-f(x))):ctx.lineTo(toX(x),toY(-f(x)));}
+  ctx.stroke(); ctx.setLineDash([]);
+
+  ctx.fillStyle=C.text; ctx.font='12px '+getComputedStyle(document.body).fontFamily; ctx.textAlign='center';
+  ctx.fillText('eje x', w-pad.r-8, h-pad.b+16);
+}
+
+function drawDisco() {
+  const cv = document.getElementById('cvDisco');
+  const { ctx, w, h } = setupCanvas(cv, 200);
+  const C = getColors();
+  const f = fns[document.getElementById('fnDiscoSel').value];
+  const a = +document.getElementById('slA').value;
+  let b = +document.getElementById('slB').value;
+  if(b<=a) b=a+0.1;
+  document.getElementById('lblA').textContent=a.toFixed(1);
+  document.getElementById('lblB').textContent=b.toFixed(1);
+
+  const pad={l:40,r:20,t:20,b:30};
+  const xMax=3,yMax=2.5;
+  const toX=v=>pad.l+v/xMax*(w-pad.l-pad.r);
+  const toY=v=>h-pad.b-v/yMax*(h-pad.t-pad.b);
+  const midY=toY(0);
+  ctx.clearRect(0,0,w,h);
+
+  ctx.fillStyle=C.disk;
+  ctx.beginPath();
+  for(let i=0;i<=100;i++){const x=a+i/100*(b-a);ctx.lineTo(toX(x),toY(f(x)));}
+  for(let i=100;i>=0;i--){const x=a+i/100*(b-a);ctx.lineTo(toX(x),toY(-f(x)));}
+  ctx.closePath(); ctx.fill();
+
+  ctx.strokeStyle=C.axis; ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(pad.l,pad.t);ctx.lineTo(pad.l,h-pad.b);ctx.lineTo(w-pad.r,h-pad.b);ctx.stroke();
+
+  ctx.strokeStyle=C.curve; ctx.lineWidth=2.5;
+  ctx.beginPath();
+  for(let i=0;i<=200;i++){const x=i/200*xMax;i===0?ctx.moveTo(toX(x),toY(f(x))):ctx.lineTo(toX(x),toY(f(x)));}
+  ctx.stroke();
+  ctx.lineWidth=1.2; ctx.setLineDash([4,4]);
+  ctx.beginPath();
+  for(let i=0;i<=200;i++){const x=i/200*xMax;i===0?ctx.moveTo(toX(x),toY(-f(x))):ctx.lineTo(toX(x),toY(-f(x)));}
+  ctx.stroke(); ctx.setLineDash([]);
+
+  ctx.strokeStyle=C.diskBd; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(toX(a),midY-80);ctx.lineTo(toX(a),h-pad.b);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(toX(b),midY-80);ctx.lineTo(toX(b),h-pad.b);ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle=C.text; ctx.font='12px system-ui'; ctx.textAlign='center';
+  ctx.fillText('a='+a.toFixed(1),toX(a),h-pad.b+16);
+  ctx.fillText('b='+b.toFixed(1),toX(b),h-pad.b+16);
+
+  const N=1000,dx2=(b-a)/N; let vol=0;
+  for(let i=0;i<N;i++){const x=a+(i+0.5)*dx2;vol+=Math.PI*f(x)*f(x)*dx2;}
+  document.getElementById('volDisco').textContent=vol.toFixed(3);
+}
+
+function drawArandela() {
+  const cv = document.getElementById('cvArandela');
+  const { ctx, w, h } = setupCanvas(cv, 200);
+  const C = getColors();
+  const fR=fns[document.getElementById('fnR').value];
+  const fr=fns[document.getElementById('fnr').value];
+  const bv=+document.getElementById('slArandB').value;
+  document.getElementById('lblArandB').textContent=bv.toFixed(2);
+
+  const pad={l:40,r:20,t:20,b:30};
+  const xMax=1.6,yMax=1.6;
+  const toX=v=>pad.l+v/xMax*(w-pad.l-pad.r);
+  const toY=v=>h-pad.b-v/yMax*(h-pad.t-pad.b);
+  ctx.clearRect(0,0,w,h);
+
+  ctx.fillStyle=C.outer;
+  ctx.beginPath();
+  for(let i=0;i<=100;i++){const x=i/100*bv;ctx.lineTo(toX(x),toY(Math.max(fR(x),fr(x))));}
+  for(let i=100;i>=0;i--){const x=i/100*bv;ctx.lineTo(toX(x),toY(Math.min(fR(x),fr(x))));}
+  ctx.closePath(); ctx.fill();
+
+  ctx.fillStyle=C.inner;
+  ctx.beginPath();
+  for(let i=0;i<=100;i++){const x=i/100*bv;ctx.lineTo(toX(x),toY(Math.min(fR(x),fr(x))));}
+  for(let i=100;i>=0;i--){const x=i/100*bv;ctx.lineTo(toX(x),toY(0));}
+  ctx.closePath(); ctx.fill();
+
+  ctx.fillStyle=C.outer;
+  ctx.beginPath();
+  for(let i=0;i<=100;i++){const x=i/100*bv;ctx.lineTo(toX(x),toY(-Math.max(fR(x),fr(x))));}
+  for(let i=100;i>=0;i--){const x=i/100*bv;ctx.lineTo(toX(x),toY(-Math.min(fR(x),fr(x))));}
+  ctx.closePath(); ctx.fill();
+
+  ctx.strokeStyle=C.axis; ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(pad.l,pad.t);ctx.lineTo(pad.l,h-pad.b);ctx.lineTo(w-pad.r,h-pad.b);ctx.stroke();
+
+  ctx.strokeStyle=C.curve; ctx.lineWidth=2.5;
+  ctx.beginPath();
+  for(let i=0;i<=200;i++){const x=i/200*xMax;i===0?ctx.moveTo(toX(x),toY(fR(x))):ctx.lineTo(toX(x),toY(fR(x)));}
+  ctx.stroke();
+
+  ctx.strokeStyle=C.innerBd; ctx.lineWidth=2;
+  ctx.beginPath();
+  for(let i=0;i<=200;i++){const x=i/200*xMax;i===0?ctx.moveTo(toX(x),toY(fr(x))):ctx.lineTo(toX(x),toY(fr(x)));}
+  ctx.stroke();
+
+  ctx.font='12px system-ui'; ctx.textAlign='left';
+  ctx.fillStyle=C.curve; ctx.fillText('R(x)',toX(1.3),toY(fR(1.3))-6);
+  ctx.fillStyle=C.innerBd; ctx.fillText('r(x)',toX(1.3),toY(fr(1.3))+14);
+
+  const N=1000,dx3=bv/N; let vol=0;
+  for(let i=0;i<N;i++){const x=(i+0.5)*dx3;vol+=Math.PI*(Math.pow(Math.max(fR(x),fr(x)),2)-Math.pow(Math.min(fR(x),fr(x)),2))*dx3;}
+  document.getElementById('volArand').textContent=vol.toFixed(3);
+}
+
+const questions=[
+  {q:'¿Cuál es la fórmula del método de disco al girar f(x) alrededor del eje x?',opts:['V = ∫ f(x) dx','V = π ∫ [f(x)]² dx','V = 2π ∫ x·f(x) dx','V = π ∫ f(x) dx'],correct:1,fb:'¡Correcto! Se integra π por el cuadrado de la función.',fbe:'No exactamente. El radio de cada disco es f(x), y el área del círculo es π·r² = π·[f(x)]².'},
+  {q:'Si giras y = x entre 0 y b alrededor del eje x, ¿qué sólido obtienes?',opts:['Una esfera','Un cilindro','Un cono','Un toro'],correct:2,fb:'¡Exacto! La línea y = x genera un cono al girar. El volumen resulta πb³/3.',fbe:'No. La recta y = x produce un sólido con punta: un cono.'},
+  {q:'¿En qué se diferencia el método arandela del método disco?',opts:['Se usa cuando el sólido es hueco (hay dos funciones)','Se aplica solo al eje y','Integra la función sin elevar al cuadrado','Es lo mismo, diferente nombre'],correct:0,fb:'¡Correcto! Cuando hay dos curvas, los discos tienen un hueco: se convierten en arandelas.',fbe:'La clave es que el sólido tiene un hueco: aparece cuando hay dos funciones.'},
+  {q:'Para la arandela: V = π∫(R² − r²)dx. ¿Qué representa r?',opts:['El radio de la curva exterior','El radio de la curva interior (hueco)','El ancho de la arandela','La constante de integración'],correct:1,fb:'¡Muy bien! r es el radio del hueco (función menor), que se resta del disco exterior R.',fbe:'r es la función interior, la que crea el hueco en la arandela.'}
+];
+let qi=0, answered=false;
+
+function renderQuiz(){
+  if(qi>=questions.length){
+    document.getElementById('quiz-container').innerHTML=`<div style="text-align:center;padding:2rem 0"><div style="font-size:28px;margin-bottom:.5rem">🎉</div><div style="font-size:15px;font-weight:500;margin-bottom:.5rem">¡Completaste el quiz!</div><div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1rem">Dominas los fundamentos de sólidos de revolución.</div><button class="next-btn" onclick="qi=0;renderQuiz()">Reiniciar ↺</button></div>`;
+    return;
+  }
+  const q=questions[qi]; answered=false;
+  document.getElementById('quiz-container').innerHTML=`<div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:.5rem">Pregunta ${qi+1} de ${questions.length}</div><div class="quiz-q">${q.q}</div><div class="quiz-opts" id="qopts">${q.opts.map((o,i)=>`<button class="quiz-opt" onclick="checkAns(${i})">${o}</button>`).join('')}</div><div id="qfb" style="display:none" class="quiz-feedback"></div><button id="qnext" class="next-btn" style="display:none" onclick="qi++;renderQuiz()">Siguiente →</button>`;
+}
+
+function checkAns(i){
+  if(answered) return; answered=true;
+  const q=questions[qi];
+  document.querySelectorAll('.quiz-opt').forEach((el,idx)=>{
+    if(idx===q.correct) el.classList.add('correct');
+    else if(idx===i) el.classList.add('wrong');
+    el.onclick=null;
+  });
+  const fb=document.getElementById('qfb');
+  fb.style.display='block';
+  fb.className='quiz-feedback '+(i===q.correct?'ok':'err');
+  fb.textContent=i===q.correct?q.fb:q.fbe;
+  document.getElementById('qnext').style.display='inline-block';
+}
+
+function showTab(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const ids=['intuicion','disco','arandela','quiz'];
+    t.classList.toggle('active',ids[i]===id);
+  });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if(id==='intuicion') drawAll();
+  if(id==='disco') drawDisco();
+  if(id==='arandela') drawArandela();
+  if(id==='quiz') renderQuiz();
+}
+
+function drawAll(){ drawIntuicion(); }
+window.addEventListener('load',()=>{ drawAll(); renderQuiz(); });
+window.addEventListener('resize', drawAll);
+</script>
+</body>
+</html>
